@@ -112,6 +112,48 @@ Cela signifie qu’un modèle malveillant peut :
 Skops a été conçu spécialement pour partager des modèles scikit-learn de manière plus sécurisée.
 Il ne recharge pas du code arbitraire et il est conçu pour le partage
 
+Nouveau script Transform.PY
+
+# ==============================
+# VERSION AVEC SKOPS
+# ==============================
+
+import skops.io as sio
+from skrub.datasets import fetch_midwest_survey
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
+# 1️⃣ Charger les données
+dataset = fetch_midwest_survey()
+X = dataset.X
+y = dataset.y
+
+# Transformer en problème binaire
+y_binary = y.apply(
+    lambda x: "North Central"
+    if x in ["East North Central", "West North Central"]
+    else "Other"
+)
+
+# 2️⃣ Séparer train / test
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y_binary, test_size=0.2, random_state=42
+)
+
+# 3️⃣ Entraîner le modèle
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# 4️⃣ Sauvegarder en format sécurisé
+sio.dump(model, "model_random_forest.skops")
+
+# 5️⃣ Charger le modèle sécurisé
+safe_model = sio.load("model_random_forest.skops", trusted=True)
+
+# 6️⃣ Tester
+y_pred = safe_model.predict(X_test)
+print(classification_report(y_test, y_pred))
 
 
 
